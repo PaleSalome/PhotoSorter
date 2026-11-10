@@ -1,0 +1,73 @@
+name: Build and publish Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release version, for example v0.2.0-beta"
+        required: true
+        default: "v0.2.2-beta"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+
+      - name: Build standalone application
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag_name }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "push") {
+            $releaseTag = $env:GITHUB_REF_NAME
+          } else {
+            $releaseTag = $env:RELEASE_TAG
+          }
+          if ($releaseTag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$') {
+            throw "Release tag must use semantic version format, such as v0.2.0-beta."
+          }
+          $env:PHOTOSORTER_VERSION = $releaseTag -replace '^v', ''
+          python -m PyInstaller --clean --noconfirm --onefile --windowed --name PhotoSorter photo_sorter_joystick.py
+          if ($LASTEXITCODE -ne 0) {
+            throw "PyInstaller failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag_name }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "push") {
+            $releaseTag = $env:GITHUB_REF_NAME
+          } else {
+            $releaseTag = $env:RELEASE_TAG
+          }
+          $releaseArgs = @(
+            "release", "create", $releaseTag, "dist/PhotoSorter.exe",
+            "--title", "Photo Sorter $releaseTag",
+            "--generate-notes",
+            "--repo", $env:GITHUB_REPOSITORY
+          )
+          if ($releaseTag.Contains("-")) {
+            $releaseArgs += "--prerelease"
+          }
+          gh @releaseArgs
