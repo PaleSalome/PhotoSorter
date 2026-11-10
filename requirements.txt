@@ -1,4 +1,4 @@
-asdpygame
+pygame
 Pillow
 rawpy
 numpy
