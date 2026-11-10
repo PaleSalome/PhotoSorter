@@ -1,0 +1,4 @@
+asdpygame
+Pillow
+rawpy
+numpy

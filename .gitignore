@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+build*/
+dist*/
+release/*.exe
+/PhotoSorter*.spec
+!/PhotoSorter.spec
+/import os.py
+
+diterima/
+ditolak/
+test 1/
