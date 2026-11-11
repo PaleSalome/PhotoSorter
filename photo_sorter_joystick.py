@@ -28,7 +28,7 @@ except Exception:
 # ---------------------------
 # Konfigurasi awal
 # ---------------------------
-APP_VERSION = os.environ.get("PHOTOSORTER_VERSION", "0.2.2-beta").removeprefix("v")
+APP_VERSION = os.environ.get("PHOTOSORTER_VERSION", "0.3.0-beta").removeprefix("v")
 APP_VERSION_LABEL = APP_VERSION
 UPDATE_REPOSITORY = "PaleSalome/PhotoSorter"
 GITHUB_RELEASES_API = (
@@ -122,26 +122,30 @@ THUMBNAIL_SIZE = (68, 42)
 THUMBNAIL_CACHE_LIMIT = 128
 THEME_PALETTES = {
     "dark": {
-        "background": (29, 34, 41),
-        "panel": (38, 45, 54),
-        "text": (232, 237, 242),
-        "muted": (174, 184, 195),
-        "border": (67, 78, 91),
-        "accent": (139, 173, 226),
-        "accepted": (133, 195, 160),
-        "rejected": (220, 151, 145),
-        "error": (235, 155, 150),
+        "background": (38, 40, 45),
+        "panel": (49, 51, 56),
+        "text": (245, 237, 220),
+        "muted": (196, 179, 155),
+        "border": (184, 135, 95),
+        "accent": (222, 145, 94),
+        "accepted": (137, 183, 132),
+        "rejected": (211, 125, 111),
+        "error": (237, 141, 119),
+        "paper_line": (52, 55, 60),
+        "shadow": (25, 27, 31),
     },
     "light": {
-        "background": (242, 245, 248),
-        "panel": (255, 255, 255),
-        "text": (45, 55, 68),
-        "muted": (99, 111, 126),
-        "border": (211, 218, 226),
-        "accent": (78, 112, 163),
-        "accepted": (61, 133, 91),
-        "rejected": (180, 91, 83),
+        "background": (246, 238, 219),
+        "panel": (255, 249, 235),
+        "text": (69, 54, 43),
+        "muted": (133, 108, 86),
+        "border": (141, 92, 65),
+        "accent": (202, 112, 79),
+        "accepted": (74, 128, 88),
+        "rejected": (177, 80, 68),
         "error": (174, 63, 63),
+        "paper_line": (233, 220, 194),
+        "shadow": (220, 204, 175),
     },
 }
 
@@ -378,6 +382,41 @@ def _blend_color(start: tuple[int, int, int], end: tuple[int, int, int], amount:
     )
 
 
+def _tk_color(color: tuple[int, int, int]):
+    return "#" + "".join(f"{channel:02x}" for channel in color)
+
+
+def _draw_sketch_panel(
+    screen: pygame.Surface,
+    rect: pygame.Rect,
+    fill,
+    outline,
+    width: int = 2,
+):
+    left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+    corners = (
+        (left + 3, top + 1),
+        (right - 4, top + 2),
+        (right - 1, top + 4),
+        (right - 2, bottom - 4),
+        (right - 5, bottom - 1),
+        (left + 4, bottom - 2),
+        (left + 1, bottom - 5),
+        (left + 2, top + 4),
+    )
+    if fill is not None:
+        pygame.draw.polygon(screen, fill, corners)
+    if outline is None or width <= 0:
+        return
+
+    pygame.draw.lines(screen, outline, True, corners, width)
+    inner_corners = tuple(
+        (x + (1 if x < rect.centerx else -1), y + (1 if y < rect.centery else -1))
+        for x, y in corners
+    )
+    pygame.draw.lines(screen, outline, True, inner_corners, 1)
+
+
 def _joystick_binding_key(binding):
     if isinstance(binding, int):
         return ("button", binding)
@@ -575,46 +614,77 @@ def _show_mapping_dialog(
     dialog.title(title)
     dialog.transient(parent)
     dialog.resizable(False, False)
-    dialog.configure(background="#1d2229")
+    palette = THEME_PALETTES[_load_theme()]
+    colors = {key: _tk_color(value) for key, value in palette.items()}
+    dialog.configure(background=colors["background"])
     dialog.grab_set()
 
     style = ttk.Style(dialog)
-    style.configure("Mapping.TFrame", background="#1d2229")
-    style.configure("MappingCard.TFrame", background="#262d36")
+    style.configure("Mapping.TFrame", background=colors["background"])
+    style.configure(
+        "MappingCard.TFrame",
+        background=colors["panel"],
+        bordercolor=colors["border"],
+        borderwidth=2,
+        relief="ridge",
+    )
     style.configure(
         "MappingTitle.TLabel",
-        background="#1d2229",
-        foreground="#e8edf2",
-        font=("Segoe UI Semibold", 18),
+        background=colors["background"],
+        foreground=colors["text"],
+        font=("Segoe Print", 18, "bold"),
     )
     style.configure(
         "MappingSubtitle.TLabel",
-        background="#1d2229",
-        foreground="#aeb8c3",
-        font=("Segoe UI", 9),
+        background=colors["background"],
+        foreground=colors["muted"],
+        font=("Segoe Print", 9),
     )
     style.configure(
         "MappingCard.TLabel",
-        background="#262d36",
-        foreground="#e8edf2",
-        font=("Segoe UI", 10),
+        background=colors["panel"],
+        foreground=colors["text"],
+        font=("Segoe Print", 10),
     )
     style.configure(
         "MappingValue.TLabel",
-        background="#303a46",
-        foreground="#9fc1f2",
+        background=colors["panel"],
+        foreground=colors["accent"],
+        bordercolor=colors["border"],
+        borderwidth=1,
+        relief="ridge",
         padding=(9, 5),
-        font=("Segoe UI Semibold", 9),
+        font=("Segoe Print", 9, "bold"),
     )
     style.configure(
         "Mapping.TButton",
+        background=colors["panel"],
+        foreground=colors["text"],
+        bordercolor=colors["border"],
+        borderwidth=2,
+        relief="ridge",
         padding=(9, 6),
-        font=("Segoe UI", 9),
+        font=("Segoe Print", 9),
+    )
+    style.map(
+        "Mapping.TButton",
+        background=[("active", colors["shadow"])],
+        relief=[("pressed", "sunken")],
     )
     style.configure(
         "MappingPrimary.TButton",
+        background=colors["accent"],
+        foreground=colors["text"],
+        bordercolor=colors["border"],
+        borderwidth=2,
+        relief="ridge",
         padding=(15, 7),
-        font=("Segoe UI Semibold", 9),
+        font=("Segoe Print", 9, "bold"),
+    )
+    style.map(
+        "MappingPrimary.TButton",
+        background=[("active", colors["accent"])],
+        relief=[("pressed", "sunken")],
     )
 
     container = ttk.Frame(dialog, style="Mapping.TFrame", padding=22)
@@ -1132,23 +1202,20 @@ class PhotoSorter:
 
     def _render_current(self, screen: pygame.Surface):
         screen.fill(self.palette["background"])
-        pygame.draw.rect(screen, self.palette["panel"], VIEWPORT, border_radius=14)
-        if self.gallery_visible:
-            pygame.draw.rect(screen, self.palette["panel"], GALLERY_RECT, border_radius=14)
-        pygame.draw.rect(
+        _draw_sketch_panel(
             screen,
-            self.palette["border"],
             VIEWPORT,
-            width=1,
-            border_radius=14,
+            self.palette["panel"],
+            self.palette["border"],
+            2,
         )
         if self.gallery_visible:
-            pygame.draw.rect(
+            _draw_sketch_panel(
                 screen,
-                self.palette["border"],
                 GALLERY_RECT,
-                width=1,
-                border_radius=14,
+                self.palette["panel"],
+                self.palette["border"],
+                2,
             )
         self._draw_text(
             screen,
@@ -1156,6 +1223,18 @@ class PhotoSorter:
             26,
             self.palette["text"],
             (VIEWPORT.x + 120, 48),
+        )
+        pygame.draw.lines(
+            screen,
+            self.palette["accent"],
+            False,
+            (
+                (VIEWPORT.x + 32, 71),
+                (VIEWPORT.x + 94, 70),
+                (VIEWPORT.x + 164, 72),
+                (VIEWPORT.x + 218, 70),
+            ),
+            2,
         )
         self._draw_button(
             screen,
@@ -1172,11 +1251,16 @@ class PhotoSorter:
             self.palette["text"],
         )
         if self.gallery_visible:
-            pygame.draw.rect(
+            pygame.draw.lines(
                 screen,
                 self.palette["border"],
-                LAYOUT_DIVIDER_RECT,
-                border_radius=4,
+                False,
+                (
+                    (LAYOUT_DIVIDER_RECT.centerx - 1, LAYOUT_DIVIDER_RECT.y + 5),
+                    (LAYOUT_DIVIDER_RECT.centerx + 1, LAYOUT_DIVIDER_RECT.centery),
+                    (LAYOUT_DIVIDER_RECT.centerx - 1, LAYOUT_DIVIDER_RECT.bottom - 5),
+                ),
+                3,
             )
             self._render_gallery(screen)
 
@@ -1217,7 +1301,13 @@ class PhotoSorter:
                 new_image.set_alpha(self.transition_alpha)
             screen.blit(new_image, image_rect)
             screen.set_clip(None)
-            pygame.draw.rect(screen, self.palette["border"], VIEWPORT, 1)
+            _draw_sketch_panel(
+                screen,
+                VIEWPORT,
+                None,
+                self.palette["border"],
+                2,
+            )
 
             title = f"{self.index + 1} / {len(self.files)}  |  {self.current_path.name}"
             self._draw_text(
@@ -1314,8 +1404,14 @@ class PhotoSorter:
                     self.palette["accent"],
                     selection_progress,
                 )
-                pygame.draw.rect(screen, selected_color, row_rect, border_radius=8)
-                text_color = (255, 255, 255)
+                _draw_sketch_panel(
+                    screen,
+                    row_rect,
+                    selected_color,
+                    self.palette["accent"],
+                    2,
+                )
+                text_color = self.palette["text"]
             else:
                 text_color = self.palette["text"]
             thumbnail_rect = pygame.Rect(
@@ -1325,11 +1421,12 @@ class PhotoSorter:
             )
             thumbnail = self._get_thumbnail(self.files[file_index])
             if thumbnail is None:
-                pygame.draw.rect(
+                _draw_sketch_panel(
                     screen,
-                    self.palette["border"],
                     thumbnail_rect,
-                    border_radius=4,
+                    self.palette["panel"],
+                    self.palette["border"],
+                    1,
                 )
                 self._draw_text(
                     screen,
@@ -1340,12 +1437,12 @@ class PhotoSorter:
                 )
             else:
                 screen.blit(thumbnail, thumbnail_rect)
-            pygame.draw.rect(
+            _draw_sketch_panel(
                 screen,
-                self.palette["border"],
                 thumbnail_rect,
-                width=1,
-                border_radius=4,
+                None,
+                self.palette["border"],
+                1,
             )
 
             name_rect = pygame.Rect(
@@ -1402,13 +1499,19 @@ class PhotoSorter:
         return shortened + "..." if shortened else "..."
 
     def _draw_button(self, screen, rect, text, background, foreground):
-        pygame.draw.rect(screen, background, rect, border_radius=10)
-        pygame.draw.rect(
+        shadow_rect = rect.move(0, 3)
+        _draw_sketch_panel(
             screen,
-            self.palette["border"],
+            shadow_rect,
+            self.palette["shadow"],
+            None,
+        )
+        _draw_sketch_panel(
+            screen,
             rect,
-            width=1,
-            border_radius=10,
+            background,
+            self.palette["border"],
+            2,
         )
         self._draw_text(screen, text, 15, foreground, rect.center)
 
@@ -1623,7 +1726,7 @@ class PhotoSorter:
 
     def _get_font(self, size: int):
         if size not in self.font:
-            self.font[size] = pygame.font.SysFont("arial", size)
+            self.font[size] = pygame.font.SysFont("segoeprint", size)
         return self.font[size]
 
     def _move_file(self, file_path: Path, destination_dir: Path):
@@ -1922,8 +2025,7 @@ def main():
     root = tk.Tk()
     root.title("Photo Sorter")
     root.resizable(False, False)
-    root.geometry("600x420")    
-    root.configure(background="#1D2229")
+    root.geometry("620x440")
 
     source_folder = tk.StringVar(
         value=str(Path(sys.argv[1]).resolve()) if len(sys.argv) > 1 else ""
@@ -1936,10 +2038,7 @@ def main():
     style.theme_use("clam")
 
     def apply_palette(palette):
-        colors = {
-            key: "#" + "".join(f"{channel:02x}" for channel in value)
-            for key, value in palette.items()
-        }
+        colors = {key: _tk_color(value) for key, value in palette.items()}
         root.configure(background=colors["background"])
         style.configure(
             "App.TFrame",
@@ -1948,67 +2047,78 @@ def main():
         style.configure(
             "Card.TFrame",
             background=colors["panel"],
+            bordercolor=colors["border"],
+            borderwidth=2,
+            relief="ridge",
         )
         style.configure(
             "App.TLabel",
             background=colors["background"],
             foreground=colors["text"],
-            font=("Segoe UI", 10),
+            font=("Segoe Print", 10),
         )
         style.configure(
             "Card.TLabel",
             background=colors["panel"],
             foreground=colors["text"],
-            font=("Segoe UI", 10),
+            font=("Segoe Print", 10),
         )
         style.configure(
             "Title.TLabel",
             background=colors["background"],
             foreground=colors["text"],
-            font=("Segoe UI Semibold", 22),
+            font=("Segoe Print", 23, "bold"),
         )
         style.configure(
             "Subtitle.TLabel",
             background=colors["background"],
             foreground=colors["muted"],
-            font=("Segoe UI", 10),
+            font=("Segoe Print", 10),
         )
         style.configure(
             "CardTitle.TLabel",
             background=colors["panel"],
             foreground=colors["text"],
-            font=("Segoe UI Semibold", 11),
+            font=("Segoe Print", 11, "bold"),
         )
         style.configure(
             "TButton",
             background=colors["panel"],
             foreground=colors["text"],
             bordercolor=colors["border"],
+            borderwidth=2,
+            relief="ridge",
             padding=(12, 8),
-            font=("Segoe UI", 10),
+            font=("Segoe Print", 10),
         )
         style.map(
             "TButton",
-            background=[("active", colors["border"])],
+            background=[("active", colors["shadow"])],
             foreground=[("disabled", colors["muted"])],
+            relief=[("pressed", "sunken")],
         )
         style.configure(
             "Primary.TButton",
             background=colors["accent"],
-            foreground="#ffffff",
-            bordercolor=colors["accent"],
+            foreground=colors["text"],
+            bordercolor=colors["border"],
+            borderwidth=2,
+            relief="ridge",
             padding=(18, 9),
-            font=("Segoe UI Semibold", 10),
+            font=("Segoe Print", 10, "bold"),
         )
         style.map(
             "Primary.TButton",
             background=[("active", colors["accent"]), ("disabled", colors["border"])],
+            relief=[("pressed", "sunken")],
         )
         style.configure(
             "TEntry",
             fieldbackground=colors["panel"],
             foreground=colors["text"],
             bordercolor=colors["border"],
+            borderwidth=2,
+            relief="ridge",
             padding=8,
         )
         style.configure(
@@ -2019,6 +2129,7 @@ def main():
             arrowcolor=colors["text"],
             bordercolor=colors["border"],
             padding=6,
+            relief="ridge",
         )
         style.map(
             "TCombobox",
@@ -2038,7 +2149,7 @@ def main():
     )
     ttk.Label(
         header,
-        text="Pilih foto terbaik dengan alur yang nyaman dan sederhana.",
+        text="Pilih foto terbaik, satu jepretan pada satu waktu.",
         style="Subtitle.TLabel",
     ).grid(row=1, column=0, sticky="w", pady=(3, 0))
     ttk.Label(header, text="Tema", style="Subtitle.TLabel").grid(
