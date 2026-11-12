@@ -1,20 +1,20 @@
 # Photo Sorter
 
-Aplikasi Windows untuk menyortir foto. Versi saat ini: **0.3.0 beta**.
-Antarmuka menggunakan gaya hand-drawn dengan warna seperti kertas dan garis sketsa.
+Aplikasi Windows for sorting photos. Current version: **0.3.0 beta**.
+The interface features a *hand-drawn* style, with colors resembling paper and sketch-like lines.
 
-## Menjalankan aplikasi
+## How to Access the Application
 
-Unduh `PhotoSorter.exe` dari bagian **Releases** di GitHub lalu buka file tersebut. Tidak perlu memasang Python.
+Download `PhotoSorter.exe` from the **Releases** section on GitHub, then open the file. No Python installation is required.
 
-## Membuat rilis
+## Releases
 
-Simpan perubahan kode ke repo, lalu buat dan push tag versi baru, misalnya `v0.3.1-beta`. Workflow GitHub Actions akan membangun EXE Windows dan melampirkannya ke GitHub Release. Tag yang mengandung `-` diterbitkan sebagai prerelease. Workflow juga dapat dijalankan manual dari tab **Actions** dengan mengisi nama tag.
+Save code changes to the repository, then create and push a new version tag—for example, `v0.3.1-beta`. A GitHub Actions *workflow* will build the Windows EXE file and attach it to a GitHub Release. Tags containing a hyphen (`-`) will be published as a *prerelease*. This *workflow* can also be triggered manually via the **Actions** tab by entering the tag name.
 
-Di aplikasi, klik **Cek update** pada menu utama. Jika ada versi yang lebih baru, aplikasi membuka halaman rilis agar pengguna dapat mengunduh EXE.
+Within the application, click **Check for updates** in the main menu. If a newer version is available, the application will open the release page, allowing the user to download the EXE file.
 
-Pemeriksaan update membaca rilis publik melalui GitHub API untuk `PaleSalome/PhotoSorter`. Aplikasi tidak mengunduh atau mengganti file EXE secara otomatis.
+Update checks are performed by querying the GitHub API for public releases of `PaleSalome/PhotoSorter`. The application does not automatically download or replace the EXE file.
 
-Tampilan sortir menyesuaikan ukuran jendela dan resolusi layar; ukuran jendela yang tersimpan akan dibatasi agar tetap muat di layar.
+The sorting interface adapts to the window size and screen resolution; the saved window size is constrained to ensure it remains within the screen boundaries.
 
-Format foto RAW Canon `.CR3` juga didukung melalui `rawpy`/LibRaw.
+Canon RAW photo format (`.CR3`) is also supported via `rawpy`/LibRaw.
